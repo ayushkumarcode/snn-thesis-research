@@ -120,11 +120,17 @@ def measure_spinnaker_latency(fold=4, num_samples=100):
         return None
 
     features = np.load(features_path)
-    weights_path = RESULTS_DIR / "spinnaker_weights"
 
-    # Load FC2 weights
-    fc2_exc = np.load(weights_path / "fc2_exc.npy", allow_pickle=True)
-    fc2_inh = np.load(weights_path / "fc2_inh.npy", allow_pickle=True)
+    # Load FC2 connections (combined format: pre, post, weight, delay)
+    fold_dir = RESULTS_DIR / "spinnaker_weights" / f"fold{fold}"
+    if fold_dir.exists():
+        fc2_conns = np.load(fold_dir / "fc2_connections.npy", allow_pickle=True)
+    else:
+        fc2_conns = np.load(RESULTS_DIR / "spinnaker_weights" / "fc2_connections.npy", allow_pickle=True)
+
+    # Split into excitatory and inhibitory
+    fc2_exc = [c for c in fc2_conns if c[2] > 0]
+    fc2_inh = [(c[0], c[1], abs(c[2]), c[3]) for c in fc2_conns if c[2] < 0]
 
     n = min(num_samples, features.shape[0])
     latencies = []

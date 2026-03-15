@@ -87,19 +87,13 @@ def snn_forward_with_noise(
         # Conv block 1 + noise
         cur1 = model.pool1(model.bn1(model.conv1(x_t)))
         if sigma > 0.0:
-            cur1 = cur1 + torch.randn(
-                cur1.shape, device=cur1.device, dtype=cur1.dtype,
-                generator=generator,
-            ) * sigma
+            cur1 = cur1 + torch.randn_like(cur1) * sigma
         spk1, mem1 = model.lif1(cur1, mem1)
 
         # Conv block 2 + noise
         cur2 = model.pool2(model.bn2(model.conv2(spk1)))
         if sigma > 0.0:
-            cur2 = cur2 + torch.randn(
-                cur2.shape, device=cur2.device, dtype=cur2.dtype,
-                generator=generator,
-            ) * sigma
+            cur2 = cur2 + torch.randn_like(cur2) * sigma
         spk2, mem2 = model.lif2(cur2, mem2)
 
         # Pool + flatten
@@ -109,19 +103,13 @@ def snn_forward_with_noise(
         # FC block 1 + noise
         cur3 = model.fc1(flat)
         if sigma > 0.0:
-            cur3 = cur3 + torch.randn(
-                cur3.shape, device=cur3.device, dtype=cur3.dtype,
-                generator=generator,
-            ) * sigma
+            cur3 = cur3 + torch.randn_like(cur3) * sigma
         spk3, mem3 = model.lif3(cur3, mem3)
 
         # FC block 2 (output) + noise
         cur4 = model.fc2(spk3)
         if sigma > 0.0:
-            cur4 = cur4 + torch.randn(
-                cur4.shape, device=cur4.device, dtype=cur4.dtype,
-                generator=generator,
-            ) * sigma
+            cur4 = cur4 + torch.randn_like(cur4) * sigma
         spk4, mem4 = model.lif4(cur4, mem4)
 
         spk_out_rec.append(spk4)
@@ -167,19 +155,13 @@ def ann_forward_with_noise(
     # Conv block 1: Conv2d -> BN -> (noise) -> ReLU -> MaxPool
     h = features[1](features[0](x))  # conv1 + bn1
     if sigma > 0.0:
-        h = h + torch.randn(
-            h.shape, device=h.device, dtype=h.dtype,
-            generator=generator,
-        ) * sigma
+        h = h + torch.randn_like(h) * sigma
     h = features[3](features[2](h))  # ReLU + MaxPool
 
     # Conv block 2: Conv2d -> BN -> (noise) -> ReLU -> MaxPool
     h = features[5](features[4](h))  # conv2 + bn2
     if sigma > 0.0:
-        h = h + torch.randn(
-            h.shape, device=h.device, dtype=h.dtype,
-            generator=generator,
-        ) * sigma
+        h = h + torch.randn_like(h) * sigma
     h = features[7](features[6](h))  # ReLU + MaxPool
 
     # AvgPool
@@ -191,19 +173,13 @@ def ann_forward_with_noise(
     # FC1 -> (noise) -> ReLU -> Dropout
     h = classifier[0](flat)  # Linear(2304, 256)
     if sigma > 0.0:
-        h = h + torch.randn(
-            h.shape, device=h.device, dtype=h.dtype,
-            generator=generator,
-        ) * sigma
+        h = h + torch.randn_like(h) * sigma
     h = classifier[2](classifier[1](h))  # ReLU + Dropout
 
     # FC2 (output) -> (noise)
     logits = classifier[3](h)  # Linear(256, 50)
     if sigma > 0.0:
-        logits = logits + torch.randn(
-            logits.shape, device=logits.device, dtype=logits.dtype,
-            generator=generator,
-        ) * sigma
+        logits = logits + torch.randn_like(logits) * sigma
 
     return logits
 
@@ -221,8 +197,8 @@ def evaluate_snn_noisy(
 ) -> float:
     """Evaluate SNN with noise injection at a given sigma and seed."""
     model.eval()
-    generator = torch.Generator(device="cpu")
-    generator.manual_seed(seed)
+    # Generate noise on CPU to avoid MPS generator device mismatch
+    torch.manual_seed(seed)
 
     correct = 0
     total = 0
@@ -232,7 +208,7 @@ def evaluate_snn_noisy(
             data, targets = data.to(device), targets.to(device)
             spk_input = encode_direct(data, num_steps=NUM_STEPS)
             spk_out, mem_out = snn_forward_with_noise(
-                model, spk_input, sigma, generator
+                model, spk_input, sigma, None
             )
             # Rate decoding: class with most output spikes
             preds = spk_out.sum(dim=0).argmax(dim=1)
@@ -251,8 +227,8 @@ def evaluate_ann_noisy(
 ) -> float:
     """Evaluate ANN with noise injection at a given sigma and seed."""
     model.eval()
-    generator = torch.Generator(device="cpu")
-    generator.manual_seed(seed)
+    # Use global seed to avoid MPS generator device mismatch
+    torch.manual_seed(seed)
 
     correct = 0
     total = 0
@@ -260,7 +236,7 @@ def evaluate_ann_noisy(
     with torch.no_grad():
         for data, targets in loader:
             data, targets = data.to(device), targets.to(device)
-            logits = ann_forward_with_noise(model, data, sigma, generator)
+            logits = ann_forward_with_noise(model, data, sigma, None)
             preds = logits.argmax(dim=1)
             correct += (preds == targets).sum().item()
             total += targets.size(0)
