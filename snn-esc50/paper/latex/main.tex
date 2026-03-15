@@ -67,7 +67,7 @@ This paper makes the following contributions:
     \item \textbf{First convolutional SNN on ESC-50} with systematic comparison of 7 spike encoding methods;
     \item \textbf{First SpiNNaker deployment for environmental sound}, using a validated FC2-only hybrid approach with documented root-cause analysis;
     \item \textbf{Gap-collapse finding}: the SNN-ANN gap narrows from 16.7~pp to $<$1~pp with pre-trained features, showing the bottleneck is feature learning;
-    \item \textbf{First adversarial robustness analysis of SNNs on audio}, revealing 9.4$\times$ greater robustness under FGSM.
+    \item \textbf{First adversarial robustness analysis of SNNs on audio}, revealing 6.0$\times$ greater robustness under FGSM ($p$=0.007, 5-fold).
 \end{enumerate}
 
 %% ============================================================
@@ -85,6 +85,13 @@ This paper makes the following contributions:
 %% ============================================================
 
 \subsection{Architecture}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\columnwidth]{figures/architecture_diagram.pdf}
+\caption{SpikingCNN architecture ($\sim$622K parameters, $T$=25 timesteps). ANN replaces each LIF with ReLU.}
+\label{fig:architecture}
+\end{figure}
 
 Both SNN and ANN share an identical architecture ($\sim$622K parameters):
 \begin{center}
@@ -121,6 +128,13 @@ Population & 10 neurons/class, MSE loss & Multi-neuron \\
 
 \subsection{SpiNNaker Deployment}
 
+\begin{figure}[h]
+\centering
+\includegraphics[width=\columnwidth]{figures/spinnaker_pipeline.pdf}
+\caption{Hybrid SpiNNaker deployment pipeline. Conv+FC$_1$+LIF$_3$ run in software; only FC$_2$+LIF$_4$ runs on SpiNNaker hardware. FC$_1$ full deployment failed due to excitatory-inhibitory cancellation (crossed out).}
+\label{fig:pipeline}
+\end{figure}
+
 Full SNN deployment failed because AvgPool produces fractional (non-binary) outputs, causing excitatory-inhibitory cancellation in FC$_1$ (near-zero-mean weights $\mu$=$-$0.0034, 1398 simultaneous inputs $\to$ net current $\approx$ 0). We adopt an FC2-only hybrid: conv+FC$_1$+LIF$_3$ run in software (snnTorch), producing binary hidden spikes (256-d, 21.7\% active per step). Only FC$_2$ (256$\to$50)+LIF$_4$ runs on SpiNNaker.
 
 \subsection{NeuroBench Energy Analysis}
@@ -153,6 +167,13 @@ SNN Burst & 6.50 & 1.54 \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\columnwidth]{figures/encoding_bar_chart.pdf}
+\caption{ESC-50 accuracy across 7 SNN encodings and ANN baseline (5-fold CV, error bars = std). Direct encoding dominates all spike-converted methods.}
+\label{fig:encodings}
+\end{figure}
 
 Direct encoding outperforms all spike-converted alternatives by $>$20~pp (Table~\ref{tab:encoding_results}). The near-equality of rate (24.00\%) and phase (24.15\%) coding is notable: phase produces exactly 1 spike/neuron while rate produces $\sim$7, yet both achieve equal accuracy. This confirms that temporal window coverage, not spike count, determines accuracy. The 16.7~pp SNN-ANN gap is statistically significant (paired $t$-test: $p$=0.001).
 
