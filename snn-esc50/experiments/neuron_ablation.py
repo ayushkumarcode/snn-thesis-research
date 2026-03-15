@@ -91,15 +91,28 @@ class NeuronAblationHook:
         self.mask = mask
 
     def __call__(self, module, input, output):
-        """Apply the permanent ablation mask to the layer output."""
-        if output.dim() == 4:
+        """Apply the permanent ablation mask to the layer output.
+
+        LIF layers return (spike, membrane) tuples. We mask the spikes
+        and return the modified tuple. Conv/Linear layers return tensors.
+        """
+        if isinstance(output, tuple):
+            # LIF layer: output = (spikes, membrane_potential)
+            spk, mem = output
+            if spk.dim() == 4:
+                spk = spk * self.mask[None, :, None, None]
+            elif spk.dim() == 2:
+                spk = spk * self.mask[None, :]
+            else:
+                spk = spk * self.mask
+            return (spk, mem)
+        elif output.dim() == 4:
             # Conv output: (B, C, H, W) -- mask along channel dim
             return output * self.mask[None, :, None, None]
         elif output.dim() == 2:
             # FC output: (B, N) -- mask along neuron dim
             return output * self.mask[None, :]
         else:
-            # Fallback for unexpected shapes -- mask along last meaningful dim
             return output * self.mask
 
 
