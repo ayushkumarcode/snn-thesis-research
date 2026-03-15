@@ -712,7 +712,25 @@ def main():
 
     # Step 1: Load weights from MaxPool model
     print("[1/3] Loading MaxPool model weights...")
-    weights = load_model_weights(args.fold, threshold=args.threshold)
+    fc1_w_path = save_dir / f"fc1_weight_fold{args.fold}.npy"
+    fc2_w_path = save_dir / f"fc2_weight_fold{args.fold}.npy"
+
+    if fc1_w_path.exists() and fc2_w_path.exists():
+        # Load pre-extracted numpy weights (no torch needed)
+        print("  Loading cached numpy weights...")
+        weights = {
+            "fc1_weight": np.load(fc1_w_path),
+            "fc1_bias": None,
+            "fc2_weight": np.load(fc2_w_path),
+            "fc2_bias": None,
+        }
+    else:
+        # Extract weights (requires torch)
+        weights = load_model_weights(args.fold, threshold=args.threshold)
+        np.save(fc1_w_path, weights["fc1_weight"])
+        np.save(fc2_w_path, weights["fc2_weight"])
+        print("  Saved weights as numpy for future SpiNNaker runs")
+
     print(f"  FC1: {weights['fc1_weight'].shape}")
     print(f"  FC2: {weights['fc2_weight'].shape}")
 
