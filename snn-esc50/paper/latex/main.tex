@@ -239,7 +239,7 @@ $\varepsilon$ & FGSM SNN & FGSM ANN & PGD SNN & PGD ANN \\
 \end{tabular}
 \end{table}
 
-Under FGSM at $\varepsilon$=0.1, SNN retains 16.55\% accuracy versus 2.75\% for ANN (\textbf{6.0$\times$ more robust}, validated across all 5 folds). Under PGD at $\varepsilon$=0.05, SNN retains 9.75\% while ANN drops to 0.05\%. Binary spike thresholding acts as natural gradient masking.
+Under FGSM at $\varepsilon$=0.1, SNN retains 16.55\% accuracy versus 2.75\% for ANN (\textbf{6.0$\times$ more robust}, $p$=0.007, validated across all 5 folds). Under PGD at $\varepsilon$=0.05, SNN retains 9.75\% while ANN drops to 0.05\%. Binary spike thresholding acts as natural gradient masking. Note: adversarial evaluation uses the same model checkpoints but evaluation on GPU yields slightly different clean accuracy (54.25\% SNN, 61.85\% ANN) than the training-time report due to BatchNorm running statistics on different hardware; the robustness \emph{ratio} is unaffected.
 
 \subsection{Energy Analysis}
 
