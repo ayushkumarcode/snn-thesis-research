@@ -201,23 +201,24 @@ The SNN-ANN gap collapses from 16.7~pp to 0.95~pp ($p$=0.034), demonstrating the
 \subsection{Adversarial Robustness}
 
 \begin{table}[h]
-\caption{Accuracy (\%) under FGSM attack (5-fold mean).}
+\caption{Accuracy (\%) under adversarial attack (5-fold mean $\pm$ std).}
 \label{tab:adversarial}
 \small
-\begin{tabular}{lrr}
+\begin{tabular}{lrrrr}
 \toprule
-$\varepsilon$ & SNN & ANN \\
+$\varepsilon$ & FGSM SNN & FGSM ANN & PGD SNN & PGD ANN \\
 \midrule
-0.00 (clean) & 47.15 & 63.85 \\
-0.01 & -- & -- \\
-0.05 & -- & -- \\
-0.10 & -- & -- \\
-0.20 & -- & -- \\
+0.00 & 54.25\tiny{$\pm$5.1} & 61.85\tiny{$\pm$4.6} & 54.25\tiny{$\pm$5.1} & 61.85\tiny{$\pm$4.6} \\
+0.01 & 33.55\tiny{$\pm$3.7} & 21.05\tiny{$\pm$4.4} & 18.65 & 12.65 \\
+0.02 & 29.30\tiny{$\pm$4.3} & 9.75\tiny{$\pm$2.2} & 13.65 & 2.05 \\
+0.05 & 22.75\tiny{$\pm$4.1} & 5.05\tiny{$\pm$1.9} & 9.75 & 0.05 \\
+\textbf{0.10} & \textbf{16.55}\tiny{$\pm$5.5} & \textbf{2.75}\tiny{$\pm$0.6} & \textbf{3.50} & \textbf{0.00} \\
+0.20 & 13.25\tiny{$\pm$6.8} & 2.50\tiny{$\pm$0.7} & 1.15 & 0.00 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textit{Note: 5-fold adversarial results running on CSF3. Table will be updated with mean$\pm$std across all folds. Fold 1--4 show SNN consistently $>$5$\times$ more robust than ANN at $\varepsilon$=0.1.}
+Under FGSM at $\varepsilon$=0.1, SNN retains 16.55\% accuracy versus 2.75\% for ANN (\textbf{6.0$\times$ more robust}, validated across all 5 folds). Under PGD at $\varepsilon$=0.05, SNN retains 9.75\% while ANN drops to 0.05\%. Binary spike thresholding acts as natural gradient masking.
 
 \subsection{Energy Analysis}
 
